@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.bak
+state.json
+state.stale-*.json
+config.before-*.toml
+config.restored-*.toml
+custom-background.png
+private-assets/
+local-test-output/
+node_modules/

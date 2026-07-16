@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Snow Skin"
+  short_description: "Install and safely manage a reversible snow-themed Codex skin"
+  default_prompt: "Use $codex-snow-skin to prepare, customize, verify, troubleshoot, or safely restore Codex Snow Skin on Windows."

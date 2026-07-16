@@ -1,0 +1,46 @@
+[CmdletBinding()]
+param(
+  [int]$Port = 9335,
+  [switch]$NoPause
+)
+
+$ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'common-windows.ps1')
+
+function Wait-SnowSkinConsole {
+  if (-not $NoPause) { [void](Read-Host 'Press Enter to close') }
+}
+
+try {
+  Assert-DreamSkinPort -Port $Port
+  $legacyState = Join-Path $env:LOCALAPPDATA 'CodexDreamSkin\state.json'
+  if (Test-Path -LiteralPath $legacyState) {
+    throw 'Codex Dream Skin is still active. Restore it first so the two injectors cannot conflict.'
+  }
+
+  $node = Get-DreamSkinNodeRuntime
+  $codex = Get-DreamSkinCodexInstall
+  $running = (Get-DreamSkinCodexProcesses -Codex $codex).Count -gt 0
+  if ($running) {
+    $approved = Confirm-DreamSkinRestart -Message 'Snow Skin setup must close Codex once. Unsaved input may be lost. Continue?'
+    if (-not $approved) {
+      Write-Host 'Setup cancelled. Codex was not changed.'
+      Wait-SnowSkinConsole
+      exit 0
+    }
+    Stop-DreamSkinCodex -Codex $codex -AllowForce
+  }
+
+  Write-Host "Using Node.js $($node.Version) from $($node.Source)."
+  & (Join-Path $PSScriptRoot 'install-snow-skin.ps1') -Port $Port
+  if ($LASTEXITCODE -ne 0) { throw "Install failed with exit code $LASTEXITCODE." }
+  & (Join-Path $PSScriptRoot 'start-snow-skin.ps1') -Port $Port
+  if ($LASTEXITCODE -ne 0) { throw "Launch failed with exit code $LASTEXITCODE." }
+  Write-Host 'Setup completed. Use the Codex Snow Skin shortcut from now on.' -ForegroundColor Green
+  Wait-SnowSkinConsole
+} catch {
+  Write-Host "Setup failed: $($_.Exception.Message)" -ForegroundColor Red
+  Write-Host "Logs and state, when available: $env:LOCALAPPDATA\CodexSnowSkin"
+  Wait-SnowSkinConsole
+  exit 1
+}
