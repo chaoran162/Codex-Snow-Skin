@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
   [int]$Port = 9335,
-  [switch]$NoPause
+  [switch]$NoPause,
+  [switch]$RestartWithoutPrompt
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,7 +12,14 @@ function Wait-SnowSkinConsole {
   if (-not $NoPause) { [void](Read-Host 'Press Enter to close') }
 }
 
+$stateRoot = Join-Path $env:LOCALAPPDATA 'CodexSnowSkin'
+New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
+$setupLog = Join-Path $stateRoot 'setup.log'
+$transcriptStarted = $false
 try {
+  Start-Transcript -LiteralPath $setupLog -Append -Force | Out-Null
+  $transcriptStarted = $true
+  Write-Host "Snow Skin setup started at $((Get-Date).ToString('o'))."
   Assert-DreamSkinPort -Port $Port
   $legacyState = Join-Path $env:LOCALAPPDATA 'CodexDreamSkin\state.json'
   if (Test-Path -LiteralPath $legacyState) {
@@ -22,7 +30,10 @@ try {
   $codex = Get-DreamSkinCodexInstall
   $running = (Get-DreamSkinCodexProcesses -Codex $codex).Count -gt 0
   if ($running) {
-    $approved = Confirm-DreamSkinRestart -Message 'Snow Skin setup must close Codex once. Unsaved input may be lost. Continue?'
+    $approved = [bool]$RestartWithoutPrompt
+    if (-not $approved) {
+      $approved = Confirm-DreamSkinRestart -Message 'Snow Skin setup must close Codex once. Unsaved input may be lost. Continue?'
+    }
     if (-not $approved) {
       Write-Host 'Setup cancelled. Codex was not changed.'
       Wait-SnowSkinConsole
@@ -40,7 +51,9 @@ try {
   Wait-SnowSkinConsole
 } catch {
   Write-Host "Setup failed: $($_.Exception.Message)" -ForegroundColor Red
-  Write-Host "Logs and state, when available: $env:LOCALAPPDATA\CodexSnowSkin"
+  Write-Host "Setup log: $setupLog"
   Wait-SnowSkinConsole
   exit 1
+} finally {
+  if ($transcriptStarted) { try { Stop-Transcript | Out-Null } catch {} }
 }

@@ -18,7 +18,7 @@ The normal launcher searches up to 100 ports when the default is busy. A manuall
 
 ## Codex opens but the theme is absent
 
-Run `scripts/verify-snow-skin.ps1`. Check `%LOCALAPPDATA%\CodexSnowSkin\verify.log`, `injector.log`, and `injector-error.log`. If verification mentions missing shell markers, a Codex update likely changed the renderer structure; restore the official skin and update Snow Skin before retrying.
+Run `scripts/verify-snow-skin.ps1`. Check `%LOCALAPPDATA%\CodexSnowSkin\setup.log`, `verify.log`, `injector.log`, and `injector-error.log`. If verification mentions missing shell markers, a Codex update likely changed the renderer structure; restore the official skin and update Snow Skin before retrying.
 
 ## Codex closes during first setup
 

@@ -76,7 +76,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-snow-skin\sc
 
 ## 排错
 
-先查看 `%LOCALAPPDATA%\CodexSnowSkin\injector-error.log` 和 `verify.log`。完整排错表见 [troubleshooting.md](skills/codex-snow-skin/references/troubleshooting.md)。
+先查看 `%LOCALAPPDATA%\CodexSnowSkin\setup.log`、`injector-error.log` 和 `verify.log`。完整排错表见 [troubleshooting.md](skills/codex-snow-skin/references/troubleshooting.md)。
 
 运行测试：
 
