@@ -48,7 +48,7 @@ try {
   & (Join-Path $PSScriptRoot 'start-snow-skin.ps1') -Port $Port
   if ($LASTEXITCODE -ne 0) { throw "Launch failed with exit code $LASTEXITCODE." }
   Write-Host 'Setup completed. Use the Codex Snow Skin shortcut from now on.' -ForegroundColor Green
-  Wait-SnowSkinConsole
+  if (-not $NoPause) { Start-Sleep -Seconds 3 }
 } catch {
   Write-Host "Setup failed: $($_.Exception.Message)" -ForegroundColor Red
   Write-Host "Setup log: $setupLog"

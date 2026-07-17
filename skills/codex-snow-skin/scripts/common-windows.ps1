@@ -144,8 +144,9 @@ function Start-DreamSkinCodex {
 function Get-DreamSkinProcessExecutablePath {
   param([Parameter(Mandatory = $true)][object]$ProcessInfo)
   if ($ProcessInfo.ExecutablePath) { return "$($ProcessInfo.ExecutablePath)" }
+  $process = Get-Process -Id ([int]$ProcessInfo.ProcessId) -ErrorAction SilentlyContinue
+  if (-not $process) { return $null }
   try {
-    $process = Get-Process -Id ([int]$ProcessInfo.ProcessId) -ErrorAction Stop
     if ($process.Path) { return "$($process.Path)" }
     return "$($process.MainModule.FileName)"
   } catch {
@@ -521,8 +522,10 @@ function Archive-DreamSkinStateFile {
 
 function Get-DreamSkinProcessStartedAt {
   param([int]$ProcessId)
+  $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+  if (-not $process) { return $null }
   try {
-    return (Get-Process -Id $ProcessId -ErrorAction Stop).StartTime.ToUniversalTime().ToString('o')
+    return $process.StartTime.ToUniversalTime().ToString('o')
   } catch {
     return $null
   }
