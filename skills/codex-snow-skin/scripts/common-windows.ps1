@@ -405,12 +405,22 @@ function Test-DreamSkinCodexPortOwner {
   return $true
 }
 
+function Get-DreamSkinCodexInstallOwningPort {
+  param([int]$Port)
+  if ((Get-DreamSkinPortListeners -Port $Port).Count -eq 0) { return $null }
+  try { $installs = @(Get-DreamSkinRegisteredCodexInstalls) } catch { return $null }
+  foreach ($install in $installs) {
+    if (Test-DreamSkinCodexPortOwner -Port $Port -Codex $install) { return $install }
+  }
+  return $null
+}
+
 function Get-DreamSkinVerifiedCdpIdentity {
   param([int]$Port, [Parameter(Mandatory = $true)][object]$Codex)
   if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $Codex)) { return $null }
   $browser = Get-DreamSkinCdpBrowserIdentity -Port $Port
   if ($null -eq $browser) { return $null }
-  $targets = Get-DreamSkinCdpTargets -Port $Port
+  $targets = @(Get-DreamSkinCdpTargets -Port $Port)
   if ($targets.Count -eq 0) { return $null }
   if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $Codex)) { return $null }
   return [pscustomobject]@{
@@ -584,7 +594,8 @@ function Stop-DreamSkinCodex {
   $processes = Get-DreamSkinCodexProcesses -Codex $Codex
   if ($processes.Count -eq 0) { return }
   foreach ($item in $processes) {
-    try { [void](Get-Process -Id $item.ProcessId -ErrorAction Stop).CloseMainWindow() } catch {}
+    $managedProcess = Get-Process -Id $item.ProcessId -ErrorAction SilentlyContinue
+    if ($managedProcess) { try { [void]$managedProcess.CloseMainWindow() } catch {} }
   }
 
   $deadline = (Get-Date).AddSeconds(15)

@@ -22,7 +22,7 @@ Run `scripts/verify-snow-skin.ps1`. Check `%LOCALAPPDATA%\CodexSnowSkin\setup.lo
 
 ## Codex closes during first setup
 
-One restart is expected and requires confirmation. If Codex does not reopen, use the normal Codex Start menu entry. Setup rollback attempts to remove the new injector and reopen Codex without debugging flags.
+One restart is expected and requires confirmation. A first launch after a Store update can take up to two minutes while package identity and the renderer settle. If Codex does not reopen, use the normal Codex Start menu entry. Setup rollback attempts to remove the new injector and reopen Codex without debugging flags.
 
 ## Custom image does not appear
 

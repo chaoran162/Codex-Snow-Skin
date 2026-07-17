@@ -112,13 +112,23 @@ try {
       $launchedWithCdp = $true
     }
 
-    $deadline = (Get-Date).AddSeconds(45)
+    $startupTimeoutSeconds = 120
+    $deadline = (Get-Date).AddSeconds($startupTimeoutSeconds)
     $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex
     while ($null -eq $cdpIdentity) {
       if ((Get-Date) -ge $deadline) {
-        throw "Codex did not expose a verified loopback CDP endpoint on port $Port within 45 seconds."
+        throw "Codex did not expose a verified loopback CDP endpoint on port $Port within $startupTimeoutSeconds seconds."
       }
-      Start-Sleep -Milliseconds 400
+      Start-Sleep -Milliseconds 500
+      if (-not (Test-DreamSkinCodexPortOwner -Port $Port -Codex $codex)) {
+        $updatedCodex = Get-DreamSkinCodexInstallOwningPort -Port $Port
+        if ($null -ne $updatedCodex) {
+          if (-not (Test-DreamSkinPathEqual -Left $updatedCodex.Executable -Right $codex.Executable)) {
+            Write-Warning "Codex updated during startup; continuing with registered Store package $($updatedCodex.Version)."
+          }
+          $codex = $updatedCodex
+        }
+      }
       $cdpIdentity = Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $codex
     }
     $stableBrowserId = $cdpIdentity.BrowserId
@@ -130,17 +140,23 @@ try {
     $cdpIdentity = $stableIdentity
   } catch {
     $launchError = $_
+    $rollbackPortCodex = Get-DreamSkinCodexInstallOwningPort -Port $Port
+    if ($null -ne $rollbackPortCodex) { $codex = $rollbackPortCodex }
     if ($launchedWithCdp) {
       try { Stop-DreamSkinCodex -Codex $codex -AllowForce } catch {
         Write-Warning 'Launch rollback could not fully close the failed CDP session.'
       }
     }
-    if (($closedExistingCodex -or $launchedWithCdp) -and
-      (Get-DreamSkinCodexProcesses -Codex $codex).Count -eq 0) {
+    $rollbackInstalls = @(Get-DreamSkinRegisteredCodexInstalls)
+    $anyRegisteredCodexRunning = @($rollbackInstalls | Where-Object {
+      (Get-DreamSkinCodexProcesses -Codex $_).Count -gt 0
+    }).Count -gt 0
+    if (($closedExistingCodex -or $launchedWithCdp) -and -not $anyRegisteredCodexRunning) {
       if ($launchedWithCdp) {
         Write-Warning 'Snow Skin launch failed; reopening Codex without a debugging port.'
       }
-      try { Start-DreamSkinCodex -Codex $codex | Out-Null } catch {
+      $normalCodex = if ($rollbackInstalls.Count -gt 0) { $rollbackInstalls[0] } else { $codex }
+      try { Start-DreamSkinCodex -Codex $normalCodex | Out-Null } catch {
         Write-Warning 'Launch rollback could not reopen Codex automatically.'
       }
     }

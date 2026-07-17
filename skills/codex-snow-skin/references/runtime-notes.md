@@ -11,5 +11,5 @@
 - `config.toml` is parsed from strict UTF-8 bytes, staged in the same directory, checked for concurrent changes, and replaced with a non-null backup path through `System.IO.File.Replace`. New files use the two-argument `File.Move` overload for Windows PowerShell 5.1 compatibility.
 - Install stores a byte-for-byte pre-install config backup. Restore supports selective base-color restoration or exact backup recovery and retains completed backup archives.
 - Theme version comes only from `assets/theme.json`; injector and renderer receive the same value. Verification rejects a stale payload.
-- Store updates are rediscovered on each launch. Active state from an old package is managed only after full/family/application identity and executable path validation.
+- Store updates are rediscovered on each launch and again while waiting for the CDP endpoint. If the Store replaces Codex during restart, the launcher follows only the newly registered package that owns the loopback port. Active state from an old package is managed only after full/family/application identity and executable path validation.
 - A per-user named mutex prevents concurrent install, start, restore, and verify operations.
