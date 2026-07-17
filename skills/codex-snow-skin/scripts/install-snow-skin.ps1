@@ -43,7 +43,9 @@ try {
     $startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'
     $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
     $startScript = Join-Path $PSScriptRoot 'start-snow-skin.ps1'
+    $customizeScript = Join-Path $PSScriptRoot 'customize-snow-skin.ps1'
     $restoreScript = Join-Path $PSScriptRoot 'restore-snow-skin.ps1'
+    $iconPath = $registeredInstalls[0].Executable
     $portArgument = if ($PortExplicit) { " -Port $Port" } else { '' }
 
     foreach ($folder in @($desktop, $startMenu)) {
@@ -52,7 +54,16 @@ try {
       $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$startScript`"$portArgument -PromptRestart"
       $shortcut.WorkingDirectory = $SkillRoot
       $shortcut.Description = 'Launch the official Codex app with Codex Snow Skin'
+      $shortcut.IconLocation = "$iconPath,0"
       $shortcut.Save()
+
+      $customize = $shell.CreateShortcut((Join-Path $folder 'Codex Snow Skin - Customize.lnk'))
+      $customize.TargetPath = $powershell
+      $customize.Arguments = "-NoProfile -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$customizeScript`"$portArgument"
+      $customize.WorkingDirectory = $SkillRoot
+      $customize.Description = 'Choose a private local background for Codex Snow Skin'
+      $customize.IconLocation = "$iconPath,0"
+      $customize.Save()
     }
 
     $restore = $shell.CreateShortcut((Join-Path $desktop 'Codex Snow Skin - Restore.lnk'))
@@ -60,13 +71,14 @@ try {
     $restore.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$restoreScript`"$portArgument -RestoreBaseTheme -PromptRestart"
     $restore.WorkingDirectory = $SkillRoot
     $restore.Description = 'Restore the official Codex appearance and close the CDP session'
+    $restore.IconLocation = "$iconPath,0"
     $restore.Save()
   }
 
   if ($NoShortcuts) {
     Write-Host 'Codex Snow Skin base theme installed. Run start-snow-skin.ps1 to launch it.'
   } else {
-    Write-Host 'Codex Snow Skin installed. The launch shortcut asks before restarting an open Codex window.'
+    Write-Host 'Codex Snow Skin installed with launch, customize, and restore shortcuts.'
   }
 } finally {
   Exit-DreamSkinOperationLock -Mutex $operationLock

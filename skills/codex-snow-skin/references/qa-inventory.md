@@ -15,6 +15,7 @@
 - Native sidebar, project selector, composer, cards, menus, scrollbars, and task navigation remain interactive.
 - No decoration intercepts pointer input or covers essential controls.
 - Custom images crop to 16:9 without changing layout dimensions.
+- The graphical customizer selects or resets a local-only image and never writes user art inside the skill directory.
 
 ## Failure checks
 
@@ -22,5 +23,6 @@
 - Reused PID, mismatched Node path, old package identity, changed Browser ID, fake `app://` target, or remote WebSocket URL is rejected.
 - Verification failure stops the new injector and reopens Codex without debug flags.
 - Concurrent operations fail on the named mutex without changing config or state.
+- Invalid, empty, undersized, oversized, or unsupported custom images fail before replacing the previous local background.
 - A Codex Store update either passes selectors and verification or exits with a useful log; it does not patch installed files.
 - Existing Codex Dream Skin state blocks setup to prevent injector conflicts.

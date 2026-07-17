@@ -11,8 +11,9 @@ Manage the Windows Snow Skin without modifying the official Codex package or exp
 
 - For first install or update, run `scripts/create-launchers.ps1`. Tell the user to finish the current task and then double-click `Install or Update Codex Snow Skin` on the desktop.
 - Never run `setup-snow-skin.ps1` from an active Codex task. It intentionally closes Codex once and would interrupt the task.
-- For a personal background, run `scripts/set-snow-image.ps1 -ImagePath <absolute-path>`. The script writes only to `%LOCALAPPDATA%\CodexSnowSkin`; tell the user to relaunch using `Codex Snow Skin`.
-- For default artwork, run `scripts/set-snow-image.ps1 -Reset`.
+- For a personal background supplied by path, run `scripts/set-snow-image.ps1 -ImagePath <absolute-path>`. The script validates, orients, crops, and writes only to `%LOCALAPPDATA%\CodexSnowSkin`; tell the user to reapply or relaunch using `Codex Snow Skin`.
+- When the user wants to choose an image themselves, launch `scripts/customize-snow-skin.ps1` without arguments. The graphical flow can choose an image, restore the default, and explicitly ask before applying a change that may restart Codex.
+- For default artwork without the graphical flow, run `scripts/set-snow-image.ps1 -Reset`.
 - For a health check while Snow Skin is active, run `scripts/verify-snow-skin.ps1`. Inspect `%LOCALAPPDATA%\CodexSnowSkin\verify.log` and `injector-error.log` if it fails.
 - For removal, direct the user to desktop `Codex Snow Skin - Restore`. Do not close the active Codex task without explicit user confirmation.
 
@@ -25,7 +26,7 @@ Manage the Windows Snow Skin without modifying the official Codex package or exp
 powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\create-launchers.ps1"
 ```
 
-3. Report the created desktop path and explain that the launcher asks before closing Codex.
+3. Report the created desktop path and explain that setup adds launch, customize, and restore shortcuts and asks before closing Codex.
 4. After the user returns, run `scripts/verify-snow-skin.ps1` and report the exact failure log when verification does not pass.
 
 ## Guardrails
@@ -33,6 +34,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\create
 - Support only Windows 10/11 x64 and the registered `OpenAI.Codex` Microsoft Store package.
 - Do not edit `WindowsApps`, `ChatGPT.exe`, `app.asar`, API keys, login state, environment variables, or user projects.
 - Do not copy user backgrounds into this skill or a Git repository. Do not upload them.
+- Do not pass `-ApplyNow` or otherwise restart Codex unless the user has explicitly approved losing any unfinished input.
 - Do not bundle celebrity likenesses, protected event marks, or third-party art without explicit rights.
 - Do not stop a process by name alone. Use the Store package identity and exact executable path checks in `common-windows.ps1`.
 - Treat the loopback CDP port as sensitive to other processes running as the same Windows user. Recommend Restore when the theme is not needed.

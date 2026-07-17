@@ -333,23 +333,76 @@ try {
 
   $oldLocalAppData = $env:LOCALAPPDATA
   $testImage = $null
+  $renderedImage = $null
+  $smallImage = $null
   try {
     $env:LOCALAPPDATA = Join-Path $temporaryRoot 'local-app-data'
     Add-Type -AssemblyName System.Drawing
     $testImage = [System.Drawing.Bitmap]::new(640, 360)
     $testImagePath = Join-Path $temporaryRoot 'source.png'
     $testImage.Save($testImagePath, [System.Drawing.Imaging.ImageFormat]::Png)
-    & (Join-Path $Root 'scripts\set-snow-image.ps1') -ImagePath $testImagePath *> $null
+    $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
+    & $powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `
+      (Join-Path $Root 'scripts\customize-snow-skin.ps1') -ImagePath $testImagePath -NoApply *> $null
+    if ($LASTEXITCODE -ne 0) { throw 'Fresh PowerShell customization process failed.' }
     $customImagePath = Join-Path $env:LOCALAPPDATA 'CodexSnowSkin\custom-background.png'
     if (-not (Test-Path -LiteralPath $customImagePath) -or
       ([System.IO.File]::ReadAllBytes($customImagePath)[0] -ne 0x89)) {
       throw 'Custom background conversion did not produce a local PNG.'
     }
-    & (Join-Path $Root 'scripts\set-snow-image.ps1') -Reset *> $null
+    $renderedImage = [System.Drawing.Image]::FromFile($customImagePath)
+    if ($renderedImage.Width -ne 1920 -or $renderedImage.Height -ne 1080) {
+      throw 'Custom background conversion did not produce a stable 1920x1080 canvas.'
+    }
+    $renderedImage.Dispose()
+    $renderedImage = $null
+
+    $beforeInvalid = [System.IO.File]::ReadAllBytes($customImagePath)
+    $invalidImagePath = Join-Path $temporaryRoot 'invalid-image.png'
+    [System.IO.File]::WriteAllText($invalidImagePath, 'not an image', $utf8NoBom)
+    $invalidImageRejected = $false
+    try { & (Join-Path $Root 'scripts\set-snow-image.ps1') -ImagePath $invalidImagePath *> $null } catch {
+      $invalidImageRejected = $true
+    }
+    if (-not $invalidImageRejected -or
+      -not (Test-DreamSkinBytesEqual -Left $beforeInvalid -Right ([System.IO.File]::ReadAllBytes($customImagePath)))) {
+      throw 'Invalid image input replaced the previous custom background.'
+    }
+
+    $smallImage = [System.Drawing.Bitmap]::new(319, 180)
+    $smallImagePath = Join-Path $temporaryRoot 'too-small.png'
+    $smallImage.Save($smallImagePath, [System.Drawing.Imaging.ImageFormat]::Png)
+    $smallImageRejected = $false
+    try { & (Join-Path $Root 'scripts\set-snow-image.ps1') -ImagePath $smallImagePath *> $null } catch {
+      $smallImageRejected = $true
+    }
+    if (-not $smallImageRejected -or
+      -not (Test-DreamSkinBytesEqual -Left $beforeInvalid -Right ([System.IO.File]::ReadAllBytes($customImagePath)))) {
+      throw 'Undersized image input replaced the previous custom background.'
+    }
+
+    & (Join-Path $Root 'scripts\customize-snow-skin.ps1') -Reset -NoApply *> $null
     if (Test-Path -LiteralPath $customImagePath) { throw 'Custom background reset did not remove the local PNG.' }
   } finally {
+    if ($smallImage) { $smallImage.Dispose() }
+    if ($renderedImage) { $renderedImage.Dispose() }
     if ($testImage) { $testImage.Dispose() }
     $env:LOCALAPPDATA = $oldLocalAppData
+  }
+
+  foreach ($requiredEntry in @(
+    (Join-Path (Split-Path -Parent (Split-Path -Parent $Root)) 'Customize Codex Snow Skin.cmd'),
+    (Join-Path $Root 'scripts\customize-snow-skin.ps1')
+  )) {
+    if (-not (Test-Path -LiteralPath $requiredEntry -PathType Leaf)) {
+      throw "Required customization entry point is missing: $requiredEntry"
+    }
+  }
+  $installSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\install-snow-skin.ps1')
+  $restoreSource = Read-DreamSkinUtf8File -Path (Join-Path $Root 'scripts\restore-snow-skin.ps1')
+  if (-not $installSource.Contains('Codex Snow Skin - Customize.lnk') -or
+    -not $restoreSource.Contains('Codex Snow Skin - Customize.lnk')) {
+    throw 'Install and uninstall do not manage the customization shortcut together.'
   }
 
   if (@(Get-ChildItem -LiteralPath $temporaryRoot -Recurse -File -Filter '*.replace-backup').Count -gt 0 -or
@@ -372,7 +425,7 @@ try {
     throw 'Injector payload and theme manifest versions differ.'
   }
 
-  Write-Host 'PASS: config transactions, Store identity, local image handling, script syntax, payload versioning, and loopback CDP validation.'
+  Write-Host 'PASS: config transactions, Store identity, local image customization, shortcut lifecycle, script syntax, payload versioning, and loopback CDP validation.'
 } finally {
   Remove-Item -LiteralPath $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

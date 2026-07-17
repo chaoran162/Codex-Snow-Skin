@@ -26,7 +26,7 @@ One restart is expected and requires confirmation. A first launch after a Store 
 
 ## Custom image does not appear
 
-Use an image from 320x180 through 100 megapixels and under 50 MB. After setting it, start Codex from `Codex Snow Skin`; an already running injector keeps its previously loaded payload.
+Use `Codex Snow Skin - Customize` and choose a valid PNG, JPEG, or BMP from 320x180 through 40 megapixels and under 50 MB. Choose `Apply now`, or start Codex from `Codex Snow Skin` later. Details from a failed graphical customization are written to `%LOCALAPPDATA%\CodexSnowSkin\customize.log`.
 
 ## Restore cannot identify a process
 

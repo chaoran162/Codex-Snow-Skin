@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$PortExplicit = $PSBoundParameters.ContainsKey('Port')
 . (Join-Path $PSScriptRoot 'common-windows.ps1')
 
 function Wait-SnowSkinConsole {
@@ -43,10 +44,14 @@ try {
   }
 
   Write-Host "Using Node.js $($node.Version) from $($node.Source)."
-  & (Join-Path $PSScriptRoot 'install-snow-skin.ps1') -Port $Port
-  if ($LASTEXITCODE -ne 0) { throw "Install failed with exit code $LASTEXITCODE." }
-  & (Join-Path $PSScriptRoot 'start-snow-skin.ps1') -Port $Port
-  if ($LASTEXITCODE -ne 0) { throw "Launch failed with exit code $LASTEXITCODE." }
+  $installArguments = @{}
+  $startArguments = @{}
+  if ($PortExplicit) {
+    $installArguments.Port = $Port
+    $startArguments.Port = $Port
+  }
+  & (Join-Path $PSScriptRoot 'install-snow-skin.ps1') @installArguments
+  & (Join-Path $PSScriptRoot 'start-snow-skin.ps1') @startArguments
   Write-Host 'Setup completed. Use the Codex Snow Skin shortcut from now on.' -ForegroundColor Green
   if (-not $NoPause) { Start-Sleep -Seconds 3 }
 } catch {
